@@ -41,7 +41,7 @@ contract ClubPassFactory is Ownable, Pausable, ReentrancyGuard {
     // Record all created PASS card contracts
     address[] public allPassContracts;
     
-    // Events - 精简版本
+    // Events 
     event ClubPassContractCreated(string indexed domainName, address contractAddress);
     event ProxyPurchase(string indexed domainName, address user, uint256 tokenId);
     event ProxySettingsChanged(string indexed domainName, string settingType);
@@ -271,7 +271,7 @@ contract ClubPassFactory is Ownable, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev 批量设置俱乐部元数据 - 合并多个设置函数
+     * @dev Batch set club metadata - Merge multiple setting functions
      * @param domainName CLUB domain name
      * @param _name Name
      * @param _symbol Symbol
@@ -297,7 +297,7 @@ contract ClubPassFactory is Ownable, Pausable, ReentrancyGuard {
         // Check if caller is CLUB admin
         if (msg.sender != clubPass.clubAdmin() && msg.sender != owner()) revert NotAdmin();
         
-        // 批量设置
+        // Batch setting
         if (bytes(_name).length > 0 || bytes(_symbol).length > 0 || bytes(_description).length > 0) {
             clubPass.setContractInfo(_name, _symbol, _description);
         }
@@ -309,7 +309,7 @@ contract ClubPassFactory is Ownable, Pausable, ReentrancyGuard {
         }
     }
     
-    // 删除不常用的单独设置会员元数据函数，可直接调用 ClubPassCard 合约
+    // Delete unused separate member metadata setting functions, can directly call ClubPassCard contract
     
     /**
      * @dev Query member and contract related information
@@ -335,7 +335,7 @@ contract ClubPassFactory is Ownable, Pausable, ReentrancyGuard {
         );
     }
     
-    // 删除不必要的配置检查函数，信息可通过其他方式获取
+    // Delete unnecessary configuration check functions, information can be obtained through other means
     
     /**
      * @dev Emergency pause

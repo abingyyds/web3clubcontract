@@ -390,7 +390,7 @@ contract ClubManager is Ownable, Pausable, IERC721Receiver {
             try IMembershipContract(tokenAccessAddr).updateClubAdmin(standardized, newAdmin) {} catch {}
         }
         
-        // 添加此部分：更新永久会员证合约的管理员
+        // Add this part: Update the administrator of the permanent membership certificate contract
         address passCollection = _clubPassCollections[standardized];
         if (passCollection != address(0)) {
             try ClubPassCard(passCollection).updateAdmin(newAdmin) {} catch {}

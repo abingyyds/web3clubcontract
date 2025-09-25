@@ -24,10 +24,10 @@ contract ClubMembershipQuery {
     TemporaryMembership private _tempMembership;
     TokenBasedAccess private _tokenAccess;
     
-    // 跨链验证合约地址
+    // Cross-chain verification contract address
     address public crossChainVerificationContract;
     
-    // 跨链验证记录存储: domainName => user => chainId => record
+    // Cross-chain verification record storage: domainName => user => chainId => record
     mapping(string => mapping(address => mapping(uint32 => CrossChainVerificationRecord))) private _crossChainRecords;
     
     struct MembershipStatus {
@@ -57,7 +57,7 @@ contract ClubMembershipQuery {
         uint256 quarterPrice;
         uint256 yearPrice;
         
-        // 修改为数组结构
+        // Modified to array structure
         TokenRequirement[] tokenRequirements;
     }
     
@@ -65,12 +65,12 @@ contract ClubMembershipQuery {
         address tokenAddress;
         uint256 requiredAmount;
         bool isNFT;
-        uint8 tokenType;  // 对应TokenType枚举
-        uint32 chainId;   // 修复：使用uint32而不是string
+        uint8 tokenType;  // Corresponds to TokenType enumeration
+        uint32 chainId;   // Fix: Use uint32 instead of string
         string symbol;
     }
     
-    // 跨链验证记录结构
+    // Cross-chain verification record structure
     struct CrossChainVerificationRecord {
         address user;
         uint32 chainId;
@@ -80,7 +80,7 @@ contract ClubMembershipQuery {
         bool isActive;
     }
     
-    // 事件定义
+    // Event definitions
     event CrossChainVerificationRecorded(
         string indexed domainName,
         address indexed user,
@@ -94,7 +94,7 @@ contract ClubMembershipQuery {
         uint32 chainId
     );
     
-    // 修饰符：仅允许跨链验证合约调用
+    // Modifier: Only allow cross-chain verification contract to call
     modifier onlyCrossChainContract() {
         if (msg.sender != crossChainVerificationContract) revert CMQNotAuthorized();
         _;
@@ -298,25 +298,25 @@ contract ClubMembershipQuery {
         conditions.isNFT = false;
         conditions.hasTokenRequirement = false;
         
-        // 获取总门槛数量
+        // Get total threshold count
         uint256 gateCount = _tokenAccess.getTokenGateCount(standardized);
         
-        // 创建临时数组来存储有效的TokenRequirement
+        // Create temporary array to store valid TokenRequirement
         TokenRequirement[] memory tempRequirements = new TokenRequirement[](gateCount);
         uint256 validCount = 0;
         
-        // 填充临时数组
+        // Fill temporary array
         for (uint256 i = 0; i < gateCount; i++) {
             try _tokenAccess.getTokenGateDetails(standardized, i) returns (
                 address tokenAddress, 
                 uint256 threshold,
-                uint256, // 省略变量名
+                uint256, // Omit variable name
                 uint8 tokenType,
                 uint32 chainId,  // 修复：使用uint32
                 string memory tokenSymbol,
                 string memory // 省略变量名
             ) {
-                // 使用索引赋值而不是push
+                // Use index assignment instead of push
                 tempRequirements[validCount] = TokenRequirement({
                     tokenAddress: tokenAddress,
                     requiredAmount: threshold,
@@ -448,14 +448,14 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 检查是否为俱乐部成员（总判定）
+     * @dev Check if user is a club member (overall determination)
      */
     function isMember(string memory domainName, address account) external view returns (bool) {
         return hasActiveMembership(domainName, account);
     }
     
     /**
-     * @dev 检查是否为永久会员
+     * @dev Check if user is a permanent member
      */
     function isPermanentMember(string memory domainName, address user) external view returns (bool) {
         string memory standardized = standardizeDomainName(domainName);
@@ -464,7 +464,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 检查是否为临时会员
+     * @dev Check if user is a temporary member
      */
     function isTemporaryMember(string memory domainName, address user) external view returns (bool) {
         string memory standardized = standardizeDomainName(domainName);
@@ -478,7 +478,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 检查是否为本链代币会员
+     * @dev Check if user is a native token member
      */
     function isTokenBasedMember(string memory domainName, address user) external view returns (bool) {
         string memory standardized = standardizeDomainName(domainName);
@@ -492,7 +492,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 检查是否为跨链会员
+     * @dev Check if user is a cross-chain member
      */
     function isCrossChainMember(string memory domainName, address user) external view returns (bool) {
         return hasCrossChainVerification(domainName, user);
@@ -537,7 +537,7 @@ contract ClubMembershipQuery {
         
         // Check temporary membership - MODIFIED
         try _tempMembership.isMembershipActive(standardized, user) returns (bool active) {
-            // 使用isMembershipActive检查是否临时会员且在有效期内
+            // Use isMembershipActive to check if temporary member and within validity period
             if (active) {
                 try _tempMembership.getMembershipExpiry(standardized, user) returns (uint256 _expiry) {
                     expiry = _expiry;
@@ -625,7 +625,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 将address转换为字符串
+     * @dev Convert address to string
      */
     function _addressToString(address addr) internal pure returns (string memory) {
         bytes memory addressBytes = abi.encodePacked(addr);
@@ -646,14 +646,14 @@ contract ClubMembershipQuery {
         return string(stringBytes);
     }
     
-    // ===== 跨链验证功能 =====
+    // ===== Cross-chain verification functions =====
     
     /**
-     * @dev 设置跨链验证合约地址（仅管理员）
-     * @param _crossChainContract 跨链验证合约地址
+     * @dev Set cross-chain verification contract address (admin only)
+     * @param _crossChainContract Cross-chain verification contract address
      */
     function setCrossChainVerificationContract(address _crossChainContract) external {
-        // 检查权限：仅ClubManager的owner可以调用
+        // Permission check: Only ClubManager's owner can call
         if (msg.sender != _clubManager.owner()) revert CMQNotAuthorized();
         if (_crossChainContract == address(0)) revert CMQInvalidVerification();
         
@@ -661,13 +661,13 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 记录跨链验证结果（仅跨链验证合约可调用）
-     * @param domainName 俱乐部域名
-     * @param user 用户地址
-     * @param chainId 链ID
-     * @param tokenAddress 代币地址
-     * @param balance 实际余额
-     * @param verificationTime 验证时间
+     * @dev Record cross-chain verification result (only callable by cross-chain verification contract)
+     * @param domainName Club domain name
+     * @param user User address
+     * @param chainId Chain ID
+     * @param tokenAddress Token address
+     * @param balance Actual balance
+     * @param verificationTime Verification time
      */
     function recordCrossChainVerification(
         string memory domainName,
@@ -695,13 +695,13 @@ contract ClubMembershipQuery {
                 string memory,
                 string memory crossChainAddress
             ) {
-                // 检查是否为匹配的跨链门槛
+                // Check if it is a matching cross-chain threshold
                 if (tokenType == uint8(TokenType.CROSSCHAIN) && gateChainId == chainId) {
-                    // 检查地址匹配
+                    // Check address match
                     string memory tokenAddressStr = _addressToString(tokenAddress);
                     bool addressMatch = _compareStringsIgnoreCase(tokenAddressStr, crossChainAddress);
                     
-                    // 检查余额是否满足门槛
+                    // Check if balance meets threshold
                     if (addressMatch && balance >= threshold) {
                         shouldHaveAccess = true;
                         break;
@@ -730,10 +730,10 @@ contract ClubMembershipQuery {
     
     
     /**
-     * @dev 移除跨链验证记录（仅跨链验证合约可调用）
-     * @param domainName 俱乐部域名
-     * @param user 用户地址
-     * @param chainId 链ID
+     * @dev Remove cross-chain verification record (only callable by cross-chain verification contract)
+     * @param domainName Club domain name
+     * @param user User address
+     * @param chainId Chain ID
      */
     function removeCrossChainVerification(
         string memory domainName,
@@ -749,16 +749,16 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 检查用户是否有有效的跨链验证
-     * @param domainName 俱乐部域名
-     * @param user 用户地址
-     * @return 是否有有效的跨链验证
+     * @dev Check if user has valid cross-chain verification
+     * @param domainName Club domain name
+     * @param user User address
+     * @return Whether there is valid cross-chain verification
      */
     function hasCrossChainVerification(string memory domainName, address user) public view returns (bool) {
         string memory standardized = standardizeDomainName(domainName);
         if (!_isDomainValid(standardized)) return false;
         
-        // 获取该俱乐部的跨链代币门槛
+        // Get cross-chain token thresholds for this club
         uint256 gateCount = _tokenAccess.getTokenGateCount(standardized);
         
         for (uint256 i = 0; i < gateCount; i++) {
@@ -771,17 +771,17 @@ contract ClubMembershipQuery {
                 string memory,
                 string memory crossChainAddress
             ) {
-                // 只检查跨链代币（使用枚举值而不是硬编码）
+                // Only check cross-chain tokens (use enum value instead of hardcoding)
                 if (tokenType == uint8(TokenType.CROSSCHAIN)) {
                     // 使用门槛中的chainId查询对应的验证记录
                     CrossChainVerificationRecord memory record = _crossChainRecords[standardized][user][chainId];
                     
-                    // 检查记录是否存在且活跃
+                    // Check if record exists and is active
                     if (record.isActive && record.user != address(0)) {
-                        // 检查地址是否匹配（忽略大小写）
+                        // Check address match (case insensitive)
                         bool addressMatch = _compareStringsIgnoreCase(record.tokenAddress, crossChainAddress);
                         
-                        // 检查地址匹配且余额满足门槛
+                        // Check address match and balance meets threshold
                         if (addressMatch && record.actualBalance >= threshold) {
                             return true;
                         }
@@ -796,11 +796,11 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 获取用户的跨链验证详情
-     * @param domainName 俱乐部域名
-     * @param user 用户地址
-     * @param chainId 链ID
-     * @return 验证记录
+     * @dev Get user's cross-chain verification details
+     * @param domainName Club domain name
+     * @param user User address
+     * @param chainId Chain ID
+     * @return Verification record
      */
     function getCrossChainVerificationRecord(
         string memory domainName,
@@ -812,11 +812,11 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 获取用户所有的跨链验证记录
-     * @param domainName 俱乐部域名
-     * @param user 用户地址
-     * @return chainIds 链ID数组
-     * @return records 对应的验证记录数组
+     * @dev Get all user's cross-chain verification records
+     * @param domainName Club domain name
+     * @param user User address
+     * @return chainIds Chain ID array
+     * @return records Corresponding verification record array
      */
     function getAllCrossChainVerifications(
         string memory domainName,
@@ -826,7 +826,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 内部函数：获取用户所有的跨链验证记录（减少Stack深度）
+     * @dev Internal function: Get all user's cross-chain verification records (reduce stack depth)
      */
     function _getAllCrossChainVerificationsInternal(
         string memory domainName,
@@ -841,7 +841,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 处理门槛记录（进一步拆分函数）
+     * @dev Process gate records (further split function)
      */
     function _processGateRecords(
         string memory standardized,
@@ -863,7 +863,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 计算有效记录数量
+     * @dev Count valid records
      */
     function _countValidRecords(
         string memory standardized,
@@ -882,7 +882,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 填充结果数组
+     * @dev Fill result arrays
      */
     function _fillResultArrays(
         string memory standardized,
@@ -909,7 +909,7 @@ contract ClubMembershipQuery {
     }
     
     /**
-     * @dev 忽略大小写比较字符串
+     * @dev 
      */
     function _compareStringsIgnoreCase(string memory a, string memory b) internal pure returns (bool) {
         bytes memory aBytes = bytes(a);
@@ -921,7 +921,7 @@ contract ClubMembershipQuery {
             bytes1 aChar = aBytes[i];
             bytes1 bChar = bBytes[i];
             
-            // 转换为小写比较
+            // Convert to lowercase for comparison
             if (aChar >= 0x41 && aChar <= 0x5A) aChar = bytes1(uint8(aChar) + 32); // A-Z -> a-z
             if (bChar >= 0x41 && bChar <= 0x5A) bChar = bytes1(uint8(bChar) + 32); // A-Z -> a-z
             

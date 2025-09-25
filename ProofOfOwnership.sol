@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-// 验证器接口
+// Verifier interface
 interface IVerifier {
     function verifyProof(
         uint[2] calldata a,
@@ -12,44 +12,48 @@ interface IVerifier {
 }
 
 contract ProofOfOwnership {
-    // 合约拥有者
+    // Contract owner
     address public owner;
-    // 费用收集地址
+    // Fee collection address
     address public feeCollector;
     
-    // 用户证明结构
+    // User proof structure
     struct UserProof {
         bytes32 hash;
         uint256 remainingUses;
         uint256 timestamp;
     }
     
-    // 用户证明映射
+    // User proof mapping
     mapping(address => UserProof) public userProofs;
     
-    // 哈希到地址的映射（记录每个哈希的创建者）
+    // Hash to address mapping (records the creator of each hash)
     mapping(bytes32 => address) public hashDeployers;
     
-    // 单次使用费用（直接以wei为单位）
+    // Hash activation status mapping (controlled by hash deployer)
+    mapping(bytes32 => bool) public hashActiveStatus;
+    
+    // Single use fee (directly in wei)
     uint256 public singleUseFee;
     
-    // 验证器合约
+    // Verifier contract
     IVerifier public immutable verifier;
     
-    // 事件
+    // Events
     event ProofStored(address indexed user, bytes32 hash, uint256 remainingUses, uint256 totalFee);
     event ProofVerified(address indexed user, bytes32 hash, uint256 newRemainingUses);
     event SingleUseFeeUpdated(uint256 oldFee, uint256 newFee);
     event FeeCollectorUpdated(address oldCollector, address newCollector);
+    event AuthorizationStatusChanged(address indexed user, bytes32 hash, bool isActive);
     
-    // 错误定义
+    // Error definitions
     error InvalidUsageCount();
     error InsufficientFee();
     error NoRemainingUses();
     error HashMismatch();
     error InvalidProof();
     
-    // 修饰器
+    // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
@@ -60,101 +64,108 @@ contract ProofOfOwnership {
         verifier = IVerifier(_verifier);
         feeCollector = _feeCollector;
         
-        // 设置默认单次使用费用为0.001 ETH (1,000,000,000,000,000 wei)
+        // Set default single use fee to 0.001 ETH (1,000,000,000,000,000 wei)
         singleUseFee = 1000000000000000;
     }
     
-    // 存储证明并支付费用
-    // _usageCount 是普通数字，例如想购买3次验证机会，就填写3
+    // Store proof and pay fee
+    // _usageCount is a regular number, for example, if you want to buy 3 verification opportunities, fill in 3
     function storeProof(bytes32 _hash, uint256 _usageCount) external payable {
         if (_usageCount == 0) {
             revert InvalidUsageCount();
         }
         
-        // 计算总费用 = 单次费用 * 使用次数
+        // Calculate total fee = single fee * usage count
         uint256 totalFee = singleUseFee * _usageCount;
         if (msg.value < totalFee) {
             revert InsufficientFee();
         }
         
-        // 如果用户已有证明，需要先清除旧证明
+        // If user already has proof, need to clear old proof first
         if (userProofs[msg.sender].remainingUses > 0) {
             delete userProofs[msg.sender];
         }
         
-        // 存储新证明
+        // Store new proof
         userProofs[msg.sender] = UserProof({
             hash: _hash,
-            remainingUses: _usageCount, // 直接使用输入的次数
+            remainingUses: _usageCount, // Directly use the input count
             timestamp: block.timestamp
         });
         
-        // 记录哈希的部署者（如果之前没有记录）
+        // Record the deployer of the hash (if not recorded before)
         if (hashDeployers[_hash] == address(0)) {
             hashDeployers[_hash] = msg.sender;
+            hashActiveStatus[_hash] = true; // Default to active when first deployed
         }
         
-        // 转移费用
+        // Transfer fee
         (bool success, ) = feeCollector.call{value: msg.value}("");
         require(success, "Fee transfer failed");
         
         emit ProofStored(msg.sender, _hash, _usageCount, totalFee);
     }
     
-    // 验证证明并扣除使用次数
+    // Verify proof and deduct usage count, returns hash deployer address and verification result
     function verifyProof(
         uint[2] calldata a,
         uint[2][2] calldata b,
         uint[2] calldata c,
         uint[1] calldata input
-    ) external returns (bool) {
-        // 获取用户证明
+    ) external returns (address hashDeployer, bool isValid) {
+        // Get user proof
         UserProof storage proof = userProofs[msg.sender];
         
-        // 检查使用次数
+        // Check usage count
         if (proof.remainingUses == 0) {
             revert NoRemainingUses();
         }
         
-        // 验证哈希值
+        // Verify hash value
         bytes32 hasher = bytes32(input[0]);
         if (proof.hash != hasher) {
             revert HashMismatch();
         }
         
-        // 验证零知识证明
-        bool isValid = verifier.verifyProof(a, b, c, input);
-        if (!isValid) {
+        // Check if hash is active (controlled by hash deployer)
+        if (!hashActiveStatus[hasher]) {
             revert InvalidProof();
         }
         
-        // 扣除使用次数
+        // Verify zero-knowledge proof
+        bool proofValid = verifier.verifyProof(a, b, c, input);
+        if (!proofValid) {
+            revert InvalidProof();
+        }
+        
+        // Deduct usage count
         proof.remainingUses--;
         
         emit ProofVerified(msg.sender, hasher, proof.remainingUses);
         
-        return true;
+        // Return hash deployer address
+        return (hashDeployers[hasher], true);
     }
     
-    // 查询剩余使用次数
+    // Query remaining usage count
     function getRemainingUses(address _user) external view returns (uint256) {
         return userProofs[_user].remainingUses;
     }
     
-    // 设置单次使用费用（直接以wei为单位）
-    // 例如：设置为900000000000000表示0.0009 ETH，设置为1000000000000000表示0.001 ETH
+    // Set single use fee (directly in wei)
+    // For example: setting to 900000000000000 represents 0.0009 ETH, setting to 1000000000000000 represents 0.001 ETH
     function setSingleUseFee(uint256 _newFee) external onlyOwner {
         emit SingleUseFeeUpdated(singleUseFee, _newFee);
         singleUseFee = _newFee;
     }
     
-    // 更新费用收集地址
+    // Update fee collection address
     function setFeeCollector(address _newCollector) external onlyOwner {
         emit FeeCollectorUpdated(feeCollector, _newCollector);
         feeCollector = _newCollector;
     }
     
-    // 获取用户证明信息
+    // Get user proof information
     function getUserProof(address _user) external view returns (
         bytes32 hash,
         uint256 remainingUses,
@@ -164,18 +175,43 @@ contract ProofOfOwnership {
         return (proof.hash, proof.remainingUses, proof.timestamp);
     }
     
-    // 计算指定次数的总费用（单位：wei）
+    // Hash deployer controls the validity of their hash
+    function setHashActive(bytes32 _hash, bool _isActive) external {
+        require(hashDeployers[_hash] == msg.sender, "Only hash deployer can control this hash");
+        
+        hashActiveStatus[_hash] = _isActive;
+        
+        emit AuthorizationStatusChanged(msg.sender, _hash, _isActive);
+    }
+    
+    // Calculate total fee for specified count (unit: wei)
     function calculateTotalFee(uint256 _usageCount) external view returns (uint256) {
         return singleUseFee * _usageCount;
     }
     
-    // 根据哈希值查询部署者地址
+    // Query deployer address by hash value
     function getHashDeployer(bytes32 _hash) external view returns (address) {
         return hashDeployers[_hash];
     }
     
-    // 查询指定地址部署的所有哈希值
+    // Query all hash values deployed by specified address
     function isHashDeployedByUser(bytes32 _hash, address _user) external view returns (bool) {
         return hashDeployers[_hash] == _user;
+    }
+    
+    // For DAPP developers: Check if a hash is active and get its information
+    function getHashStatus(bytes32 _hash) external view returns (
+        bool isActive,
+        address deployer,
+        bool exists
+    ) {
+        address hashDeployer = hashDeployers[_hash];
+        bool hashExists = hashDeployer != address(0);
+        
+        return (
+            hashActiveStatus[_hash],
+            hashDeployer,
+            hashExists
+        );
     }
 } 

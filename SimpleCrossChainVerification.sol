@@ -4,13 +4,13 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-// 简化的错误定义
+// Simplified error definitions
 error InvalidInput();
 error Unauthorized();
 error ContractPaused();
 error InsufficientFee();
 
-// 简化的接口
+// Simplified interfaces
 interface IClubMembershipQuery {
     function recordCrossChainVerification(
         string memory domainName,
@@ -53,27 +53,27 @@ interface IClubManager {
 
 /**
  * @title SimpleCrossChainVerification
- * @dev 简化的跨链验证合约 - 只保留核心功能
+ * @dev Simplified cross-chain verification contract - only keep core functionality
  */
 contract SimpleCrossChainVerification is Ownable, Pausable {
     
-    // 合约地址
+    // Contract addresses
     address public membershipQueryContract;
     address public tokenAccessContract;
     address public clubManagerContract;
     
-    // 机器人地址映射
+    // Bot address mapping
     mapping(address => bool) public authorizedBots;
     
-    // 费用机制
+    // Fee mechanism
     uint256 public verificationFee = 0.001 ether;
     address public feeRecipient;
     bool public feeEnabled = true;
     
-    // 简化的事件
+    // Simplified events
     event VerificationRequested(
         address indexed user,
-        string domainName,          // 移除indexed，保持原始字符串
+        string domainName,          // Remove indexed, keep original string
         uint32 indexed chainId,
         address tokenAddress,
         string requestId
@@ -81,7 +81,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
     
     event VerificationCompleted(
         address indexed user,
-        string domainName,          // 移除indexed，保持原始字符串
+        string domainName,          // Remove indexed, keep original string
         uint32 indexed chainId,
         bool success,
         uint256 balance,
@@ -91,7 +91,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
     event BotAuthorized(address indexed bot, bool authorized);
     event FeeUpdated(uint256 newFee    );
     
-    // 调试事件
+    // Debug events
     event VerificationDebug(
         address indexed user,
         string domainName,
@@ -101,7 +101,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         string message
     );
     
-    // 批量检查事件
+    // Batch check events
     event BatchCheckRequested(
         address indexed user,
         string domainName
@@ -133,7 +133,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         feeRecipient = _feeRecipient;
     }
     
-    // ===== 管理员功能 =====
+    // ===== Administrator functions =====
     
     function setBotAuthorization(address bot, bool authorized) external onlyOwner {
         if (bot == address(0)) revert InvalidInput();
@@ -163,13 +163,13 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         _unpause();
     }
     
-    // ===== 核心功能：用户验证请求 =====
+    // ===== Core functionality: User verification request =====
     
     /**
-     * @dev 用户发起跨链验证请求 - 核心功能
-     * @param domainName 俱乐部名称
-     * @param chainId 要验证的链ID
-     * @param tokenAddress 要验证的代币地址
+     * @dev User initiates cross-chain verification request - core functionality
+     * @param domainName Club name
+     * @param chainId Chain ID to verify
+     * @param tokenAddress Token address to verify
      */
     function requestVerification(
         string memory domainName,
@@ -178,38 +178,38 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
     ) external payable whenNotPaused2 {
         if (bytes(domainName).length == 0 || chainId == 0) revert InvalidInput();
         
-        // 检查费用
+        // Check fee
         if (feeEnabled && msg.value < verificationFee) revert InsufficientFee();
         
-        // 转账费用
+        // Transfer fee
         if (feeEnabled && verificationFee > 0) {
             (bool success,) = feeRecipient.call{value: verificationFee}("");
             require(success, "Fee transfer failed");
             
-            // 退还多余费用
+            // Refund excess fee
             if (msg.value > verificationFee) {
                 (bool refundSuccess,) = msg.sender.call{value: msg.value - verificationFee}("");
                 require(refundSuccess, "Refund failed");
             }
         }
         
-        // 检查俱乐部是否存在
+        
         (bool initialized,) = ITokenBasedAccess(tokenAccessContract).isClubInitialized(domainName);
         if (!initialized) revert InvalidInput();
         
-        // 发布事件供机器人监听
+        // Emit event for bot listening
         emit VerificationRequested(msg.sender, domainName, chainId, tokenAddress, "");
     }
     
-    // ===== 机器人功能：处理验证 =====
+    // ===== Bot functions: Process verification =====
     
     /**
-     * @dev 机器人处理验证请求 - 核心功能
-     * @param user 用户地址
-     * @param domainName 俱乐部名称
-     * @param chainId 链ID
-     * @param tokenAddress 代币地址
-     * @param actualBalance 查询到的实际余额
+     * @dev 
+     * @param user User address
+     * @param domainName Club name
+     * @param chainId Chain ID
+     * @param tokenAddress Token address
+     * @param actualBalance Actual balance queried
      */
     function processVerification(
         address user,
@@ -219,10 +219,10 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         uint256 actualBalance
     ) external onlyAuthorizedBot whenNotPaused2 {
         
-        // Cross合约不做判断，直接把数据传给Query让Query判断
+        // Cross-contract does not make judgments, directly pass data to Query for Query to judge
         emit VerificationDebug(user, domainName, chainId, tokenAddress, actualBalance, "Sending data to Query");
         
-        // 调用Query合约记录验证数据（让Query自己判断是否符合门槛）
+        // Call Query contract to record verification data (let Query judge whether it meets the threshold by itself)
         IClubMembershipQuery(membershipQueryContract).recordCrossChainVerification(
             domainName,
             user,
@@ -234,20 +234,20 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         
         emit VerificationDebug(user, domainName, chainId, tokenAddress, actualBalance, "Data sent to Query");
         
-        // 发布验证完成事件
+        // Emit verification completed event
         emit VerificationCompleted(user, domainName, chainId, true, actualBalance, 0);
     }
     
-    // ===== 查询功能 =====
+
     
     function getVerificationFeeInfo() external view returns (uint256 fee, address recipient, bool enabled) {
         return (verificationFee, feeRecipient, feeEnabled);
     }
     
     /**
-     * @dev 获取合约配置状态 - 调试用
-     * @return membershipQuery ClubMembershipQuery合约地址
-     * @return tokenAccess TokenBasedAccess合约地址
+     * @dev Get contract configuration status - for debugging
+     * @return membershipQuery ClubMembershipQuery contract address
+     * @return tokenAccess TokenBasedAccess contract address
      */
     function getContractAddresses() external view returns (address membershipQuery, address tokenAccess) {
         return (membershipQueryContract, tokenAccessContract);
@@ -260,13 +260,13 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
     
     
     /**
-     * @dev 查询俱乐部的跨链代币门槛 - 帮助调试合约调用
-     * @param domainName 俱乐部名称
-     * @return chainIds 链ID数组
-     * @return tokenAddresses 代币地址数组
-     * @return crossChainAddresses 跨链地址数组
-     * @return thresholds 门槛数组
-     * @return symbols 代币符号数组
+     * @dev Query cross-chain token thresholds for clubs - help debug contract calls
+     * @param domainName Club name
+     * @return chainIds Chain ID array
+     * @return tokenAddresses Token address array
+     * @return crossChainAddresses Cross-chain address array
+     * @return thresholds Threshold array
+     * @return symbols Token symbol array
      */
     function getClubCrossChainRequirements(string memory domainName) external view returns (
         uint32[] memory chainIds,
@@ -275,7 +275,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         uint256[] memory thresholds,
         string[] memory symbols
     ) {
-        // 调用TokenBasedAccess获取门槛
+        // Call TokenBasedAccess to get thresholds
         (
             address[] memory allTokenAddresses,
             uint256[] memory allThresholds,
@@ -286,7 +286,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
             string[] memory allCrossChainAddresses
         ) = ITokenBasedAccess(tokenAccessContract).getTokenGates(domainName);
         
-        // 统计跨链代币数量
+
         uint256 crossChainCount = 0;
         for (uint256 i = 0; i < tokenTypes.length; i++) {
             if (tokenTypes[i] == 3) { // CROSSCHAIN type
@@ -294,14 +294,14 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
             }
         }
         
-        // 创建结果数组
+
         chainIds = new uint32[](crossChainCount);
         tokenAddresses = new address[](crossChainCount);
         crossChainAddresses = new string[](crossChainCount);
         thresholds = new uint256[](crossChainCount);
         symbols = new string[](crossChainCount);
         
-        // 填充结果
+
         uint256 index = 0;
         for (uint256 i = 0; i < tokenTypes.length; i++) {
             if (tokenTypes[i] == 3) {
@@ -316,68 +316,68 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
     }
     
     /**
-     * @dev 俱乐部管理员批量检查指定成员的跨链资格
-     * @param domainName 俱乐部名称
-     * @param members 要检查的成员地址数组
+     * @dev Club administrator batch checks cross-chain qualifications of specified members
+     * @param domainName Club name
+     * @param members Member address array to check
      */
     function batchCheckMembers(
         string memory domainName,
         address[] memory members
     ) external payable {
-        // 检查俱乐部是否存在
+        // Check if club exists
         (bool initialized,) = ITokenBasedAccess(tokenAccessContract).isClubInitialized(domainName);
         if (!initialized) revert InvalidInput();
         
-        // 权限检查：只有俱乐部管理员可以调用
+        // Permission check: Only club administrator can call
         (, address clubAdmin,,,) = IClubManager(clubManagerContract).getClub(domainName);
         require(msg.sender == clubAdmin, "Only club admin can batch check");
         
-        // 计算批量检查费用（自动计算成员数量*费用）
+        // Calculate batch check fee (automatically calculate member count * fee)
         uint256 totalFee = verificationFee * members.length;
         
-        // 检查费用
+        // Check fee
         if (feeEnabled && msg.value < totalFee) revert InsufficientFee();
         
-        // 转账费用
+        // Transfer fee
         if (feeEnabled && totalFee > 0) {
             (bool success,) = feeRecipient.call{value: totalFee}("");
             require(success, "Fee transfer failed");
             
-            // 退还多余费用
+            // Refund excess fee
             if (msg.value > totalFee) {
                 (bool refundSuccess,) = msg.sender.call{value: msg.value - totalFee}("");
                 require(refundSuccess, "Refund failed");
             }
         }
         
-        // 发出批量检查事件，机器人监听并处理
+        // Emit batch check events, bots listen and process
         for (uint256 i = 0; i < members.length; i++) {
             emit BatchCheckRequested(members[i], domainName);
         }
     }
     
     /**
-     * @dev 计算批量检查费用
-     * @param memberCount 成员数量
-     * @return totalFee 总费用
+     * @dev Calculate batch check fee
+     * @param memberCount Number of members
+     * @return totalFee Total fee
      */
     function calculateBatchFee(uint256 memberCount) external view returns (uint256 totalFee) {
         return verificationFee * memberCount;
     }
     
     /**
-     * @dev 俱乐部管理员批量检查所有跨链成员
-     * @param domainName 俱乐部名称
+     * @dev Club administrator batch checks all cross-chain members
+     * @param domainName Club name
      */
     function batchCheckAllMembers(string memory domainName) external payable {
-        // 权限检查：只有俱乐部管理员可以调用
+        // Permission check: Only club administrator can call
         (, address clubAdmin,,,) = IClubManager(clubManagerContract).getClub(domainName);
         require(msg.sender == clubAdmin, "Only club admin can batch check");
         
-        // 从ClubManager获取所有成员
+        // Get all members from ClubManager
         (,,,, address[] memory allMembers) = IClubManager(clubManagerContract).getClub(domainName);
         
-        // 统计有跨链记录的成员数量
+        // Count members with cross-chain records
         uint256 crossChainCount = 0;
         for (uint256 i = 0; i < allMembers.length; i++) {
             try IClubMembershipQuery(membershipQueryContract).hasCrossChainVerification(domainName, allMembers[i]) returns (bool hasRecord) {
@@ -387,25 +387,25 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
             } catch {}
         }
         
-        // 计算费用：只对有跨链记录的成员收费
+        // Calculate fee: only charge members with cross-chain records
         uint256 totalFee = verificationFee * crossChainCount;
         
-        // 必须支付费用
+        // Must pay fee
         if (feeEnabled && msg.value < totalFee) revert InsufficientFee();
         
-        // 转账费用给feeRecipient（不是机器人）
+        // Transfer fee to feeRecipient (not bots)
         if (feeEnabled && totalFee > 0) {
             (bool success,) = feeRecipient.call{value: totalFee}("");
             require(success, "Fee transfer failed");
             
-            // 退还多余费用
+            // Refund excess fee
             if (msg.value > totalFee) {
                 (bool refundSuccess,) = msg.sender.call{value: msg.value - totalFee}("");
                 require(refundSuccess, "Refund failed");
             }
         }
         
-        // 只对有跨链记录的成员发出检查事件
+        // Only emit check events for members with cross-chain records
         for (uint256 i = 0; i < allMembers.length; i++) {
             try IClubMembershipQuery(membershipQueryContract).hasCrossChainVerification(domainName, allMembers[i]) returns (bool hasRecord) {
                 if (hasRecord) {
@@ -415,7 +415,7 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
         }
     }
     
-    // ===== 内部函数 =====
+    // ===== Internal functions =====
     
     function _addressToString(address addr) internal pure returns (string memory) {
         bytes memory addressBytes = abi.encodePacked(addr);
@@ -437,19 +437,19 @@ contract SimpleCrossChainVerification is Ownable, Pausable {
     }
     
     function _compareStrings(string memory a, string memory b) internal pure returns (bool) {
-        // 转换为小写后比较
+        // Compare after converting to lowercase
         return keccak256(abi.encodePacked(_toLowerCase(a))) == keccak256(abi.encodePacked(_toLowerCase(b)));
     }
     
     /**
-     * @dev 将字符串转换为小写
+     * @dev Convert string to lowercase
      */
     function _toLowerCase(string memory str) internal pure returns (string memory) {
         bytes memory bStr = bytes(str);
         bytes memory bLower = new bytes(bStr.length);
         
         for (uint i = 0; i < bStr.length; i++) {
-            // 如果是大写字母A-F，转换为小写
+            // If it is an uppercase letter A-F, convert to lowercase
             if (bStr[i] >= 0x41 && bStr[i] <= 0x46) {
                 bLower[i] = bytes1(uint8(bStr[i]) + 32);
             } else {
