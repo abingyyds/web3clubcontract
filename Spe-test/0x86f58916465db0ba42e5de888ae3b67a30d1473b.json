@@ -1,0 +1,822 @@
+{
+  "name": "ClubMembershipQuery",
+  "address": "0x86f58916465db0ba42e5de888ae3b67a30d1473b",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "clubManager",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "CMQInvalidDomain",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "CMQInvalidVerification",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "CMQNotAuthorized",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "chainId",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        }
+      ],
+      "name": "CrossChainVerificationRecorded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "chainId",
+          "type": "uint32"
+        }
+      ],
+      "name": "CrossChainVerificationRemoved",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "chainId",
+          "type": "uint32"
+        },
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "verificationTime",
+          "type": "uint256"
+        }
+      ],
+      "name": "recordCrossChainVerification",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "chainId",
+          "type": "uint32"
+        }
+      ],
+      "name": "removeCrossChainVerification",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_crossChainContract",
+          "type": "address"
+        }
+      ],
+      "name": "setCrossChainVerificationContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "checkDetailedMembership",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "isPermanent",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "isTemporary",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "isTokenBased",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "isCrossChain",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "checkPassCardMembership",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "checkUserMembership",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "isMember",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expirationDate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "membershipType",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct ClubMembershipQuery.MembershipStatus",
+          "name": "status",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "crossChainVerificationContract",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getAllCrossChainVerifications",
+      "outputs": [
+        {
+          "internalType": "uint32[]",
+          "name": "chainIds",
+          "type": "uint32[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "chainId",
+              "type": "uint32"
+            },
+            {
+              "internalType": "string",
+              "name": "tokenAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "actualBalance",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "verificationTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ClubMembershipQuery.CrossChainVerificationRecord[]",
+          "name": "records",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "getClubMembershipConditions",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "clubName",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "clubOwner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "permanentMembershipContract",
+              "type": "address"
+            },
+            {
+              "internalType": "bool",
+              "name": "hasPermanentMembership",
+              "type": "bool"
+            },
+            {
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "requiredTokenAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isNFT",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "hasTokenRequirement",
+              "type": "bool"
+            },
+            {
+              "internalType": "address",
+              "name": "temporaryMembershipContract",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "membershipPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "quarterPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "yearPrice",
+              "type": "uint256"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "tokenAddress",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "requiredAmount",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "isNFT",
+                  "type": "bool"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "tokenType",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint32",
+                  "name": "chainId",
+                  "type": "uint32"
+                },
+                {
+                  "internalType": "string",
+                  "name": "symbol",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct ClubMembershipQuery.TokenRequirement[]",
+              "name": "tokenRequirements",
+              "type": "tuple[]"
+            }
+          ],
+          "internalType": "struct ClubMembershipQuery.ClubMembershipConditions",
+          "name": "conditions",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "getClubPassAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "passAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "chainId",
+          "type": "uint32"
+        }
+      ],
+      "name": "getCrossChainVerificationRecord",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "user",
+              "type": "address"
+            },
+            {
+              "internalType": "uint32",
+              "name": "chainId",
+              "type": "uint32"
+            },
+            {
+              "internalType": "string",
+              "name": "tokenAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "actualBalance",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "verificationTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ClubMembershipQuery.CrossChainVerificationRecord",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "getMembershipMessage",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getUserClubs",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "userClubs",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getUserMemberships",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "domainNames",
+          "type": "string[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "isMember",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expirationDate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "membershipType",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct ClubMembershipQuery.MembershipStatus[]",
+          "name": "statuses",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "hasActiveMembership",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "hasCrossChainVerification",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "isCrossChainMember",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "isMember",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "isPermanentMember",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "isTemporaryMember",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "isTokenBasedMember",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "domainName",
+          "type": "string"
+        }
+      ],
+      "name": "standardizeDomainName",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "filePath": "electron/contract/ClubMembershipQuery.sol",
+  "pinnedAt": 1758461406238
+}
