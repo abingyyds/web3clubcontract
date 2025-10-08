@@ -102,12 +102,16 @@ contract ClubPassFactory is Ownable, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Get PASS card contract address for CLUB
+     * @dev Get CLUB permanent membership price
      * @param domainName CLUB domain name
-     * @return PASS card contract address
+     * @return Membership price
      */
-    function getClubPassContract(string memory domainName) external view returns (address) {
-        return clubPassContracts[domainName];
+    function getClubPrice(string memory domainName) external view returns (uint256) {
+        address passContract = clubPassContracts[domainName];
+        if (passContract == address(0)) return 0;
+        
+        ClubPassCard clubPass = ClubPassCard(passContract);
+        return clubPass.price();
     }
     
     /**
